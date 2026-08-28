@@ -1,0 +1,63 @@
+name: TinyHomeTodo
+
+options:
+  bundleIdPrefix: com.tinyhome
+  deploymentTarget:
+    iOS: "16.0"
+  defaultSourceDirectoryType: syncedFolder
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGNING_ALLOWED: "NO"
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  TinyHomeTodo:
+    type: application
+    platform: iOS
+    sources:
+      - path: TinyHomeTodo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tinyhome.TinyHomeTodo
+    info:
+      path: TinyHomeTodo/App/Info.plist
+      properties:
+        CFBundleDisplayName: TinyHome
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        ITSAppUsesNonExemptEncryption: false
+    preBuildScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          if which swiftlint >/dev/null 2>&1; then
+            swiftlint
+          else
+            echo "warning: SwiftLint not installed, run: brew install swiftlint"
+          fi
+
+schemes:
+  TinyHomeTodo:
+    build:
+      targets:
+        TinyHomeTodo: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
