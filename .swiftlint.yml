@@ -1,1 +1,99 @@
-# SwiftLint runs with default rules
+opt_in_rules:
+  - all
+
+analyzer_rules:
+  - all
+
+disabled_rules:
+  # opinionated style / formatter territory
+  - anonymous_argument_in_multiline_closure
+  - attributes
+  - conditional_returns_on_newline
+  - contrasted_opening_brace
+  - explicit_acl
+  - explicit_enum_raw_value
+  - explicit_top_level_acl
+  - explicit_type_interface
+  - file_types_order
+  - function_default_parameter_at_end
+  - indentation_width
+  - multiline_arguments_brackets
+  - multiline_literal_brackets
+  - multiline_parameters_brackets
+  - no_extension_access_modifier
+  - no_grouping_extension
+  - one_declaration_per_file
+  - prefixed_toplevel_constant
+  - sorted_enum_cases
+  - switch_case_on_newline
+  - trailing_closure
+  - type_contents_order
+  - vertical_whitespace_between_cases
+  # too noisy for app code
+  - discouraged_optional_collection
+  - file_header
+  - missing_docs
+  - no_magic_numbers
+  - required_deinit
+  - strict_fileprivate
+  - todo
+  # third-party test frameworks not in use
+  - prefer_nimble
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+
+excluded:
+  - .build
+  - DerivedData
+
+line_length:
+  warning: 120
+  error: 200
+  ignores_urls: true
+  ignores_comments: true
+
+function_body_length:
+  warning: 50
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 500
+  error: 800
+  ignore_comment_only_lines: true
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+  ignores_case_statements: true
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - to
+    - x
+    - y
+
+large_tuple:
+  warning: 3
+  error: 4
+
+nesting:
+  type_level:
+    warning: 2
+
+trailing_comma:
+  mandatory_comma: true
+
+redundant_type_annotation:
+  consider_default_literal_types_redundant: true
+
+no_empty_block:
+  allow_compact_empty_blocks: true
