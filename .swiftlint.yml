@@ -97,3 +97,6 @@ redundant_type_annotation:
 
 no_empty_block:
   allow_compact_empty_blocks: true
+
+trailing_whitespace:
+  ignores_empty_lines: true
