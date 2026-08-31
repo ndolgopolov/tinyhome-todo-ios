@@ -18,15 +18,18 @@ struct TaskListView: View {
             }
             .listStyle(.plain)
             .navigationTitle("Tasks")
-            .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Spacer()
-                    Button {
-                        editor = EditorSheet(task: nil)
-                    } label: {
-                        Label("New Task", systemImage: "plus")
-                    }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 76)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    editor = EditorSheet(task: nil)
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 40))
                 }
+                .padding(20)
+                .accessibilityLabel("New Task")
             }
         }
         .sheet(item: $editor) { sheet in
