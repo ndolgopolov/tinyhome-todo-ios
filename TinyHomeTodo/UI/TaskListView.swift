@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct TaskListView: View {
-    @State private var tasks = TodoTask.samples
+    let repository: any TaskRepository
+
+    @State private var tasks: [TodoTask] = []
     @State private var editor: EditorSheet?
 
     var body: some View {
@@ -34,6 +36,11 @@ struct TaskListView: View {
         }
         .sheet(item: $editor) { sheet in
             TaskEditorView(draft: sheet.task, onSave: save)
+        }
+        .task {
+            if let loaded = try? await repository.fetchTasks() {
+                tasks = loaded
+            }
         }
     }
 
@@ -93,5 +100,5 @@ private extension TaskListView {
 }
 
 #Preview {
-    TaskListView()
+    TaskListView(repository: AppEnvironment.preview.repository)
 }

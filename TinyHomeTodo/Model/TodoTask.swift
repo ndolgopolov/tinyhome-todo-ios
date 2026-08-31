@@ -8,11 +8,22 @@
 import Foundation
 
 /// A single to-do item
-struct TodoTask: Identifiable {
-    let id = UUID()
+struct TodoTask: Identifiable, Sendable {
+    var id = UUID()
     var taskDescription: String
     var isCompleted = false
     var dueDate: Date?
+    var createdDate: Date?
+}
+
+extension TodoTask: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case taskDescription
+        case isCompleted = "completed"
+        case dueDate
+        case createdDate
+    }
 }
 
 extension TodoTask {

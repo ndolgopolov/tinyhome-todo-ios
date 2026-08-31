@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct TinyHomeTodoApp: App {
+    private let environment = AppEnvironment.live
+
     var body: some Scene {
         WindowGroup {
-            TaskListView()
+            TaskListView(repository: environment.repository)
         }
     }
 }
