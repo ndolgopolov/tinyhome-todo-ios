@@ -11,24 +11,7 @@ import SwiftUI
 struct TinyHomeTodoApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            TaskListView()
         }
     }
-}
-
-struct RootView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checklist")
-                .font(.system(size: 44, weight: .regular))
-                .foregroundStyle(.tint)
-            Text("TinyHome Todo")
-                .font(.headline)
-        }
-        .padding()
-    }
-}
-
-#Preview {
-    RootView()
 }
