@@ -9,13 +9,17 @@ import SwiftUI
 
 struct TaskRowView: View {
     let task: TodoTask
+    var onToggleCompletion: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
-                .foregroundStyle(task.isCompleted ? Color.accentColor : Color.secondary)
-                .accessibilityLabel(task.isCompleted ? "Completed" : "Not completed")
+            Button(action: onToggleCompletion) {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(task.isCompleted ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(task.isCompleted ? "Mark as not completed" : "Mark as completed")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(task.taskDescription)
