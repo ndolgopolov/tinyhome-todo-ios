@@ -8,40 +8,95 @@
 import SwiftUI
 
 struct TaskListView: View {
-    let repository: any TaskRepository
-
-    @State private var tasks: [TodoTask] = []
+    @StateObject private var model: TaskListViewModel
     @State private var editor: EditorSheet?
+
+    init(repository: any TaskRepository) {
+        _model = StateObject(wrappedValue: TaskListViewModel(repository: repository))
+    }
 
     var body: some View {
         NavigationStack {
-            List(tasks) { task in
-                row(for: task)
-            }
-            .listStyle(.plain)
-            .navigationTitle("Tasks")
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 76)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                    editor = EditorSheet(task: nil)
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 40))
+            content
+                .navigationTitle("Tasks")
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: 76)
                 }
-                .padding(20)
-                .accessibilityLabel("New Task")
-            }
+                .overlay(alignment: .bottomTrailing) {
+                    Button {
+                        editor = EditorSheet(task: nil)
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 40))
+                    }
+                    .padding(20)
+                    .accessibilityLabel("New Task")
+                }
         }
         .sheet(item: $editor) { sheet in
-            TaskEditorView(draft: sheet.task, onSave: save)
+            TaskEditorView(draft: sheet.task, onSave: model.save)
         }
         .task {
-            if let loaded = try? await repository.fetchTasks() {
-                tasks = loaded
+            await model.load()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch model.state {
+        case .loading:
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .failed:
+            failure
+        case .ready:
+            if model.tasks.isEmpty {
+                emptyState
+            } else {
+                list
             }
         }
+    }
+
+    private var list: some View {
+        List(model.tasks) { task in
+            row(for: task)
+        }
+        .listStyle(.plain)
+    }
+    
+    // ContentUnavailableView is not available on iOS < 17
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "checklist")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("No tasks yet")
+                .font(.headline)
+            Text("Tap + to add one.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // ContentUnavailableView is not available on iOS < 17
+    private var failure: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("Couldn't load your tasks")
+                .font(.headline)
+            Button("Try Again") {
+                Task { await model.load() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 
     @ViewBuilder
@@ -50,13 +105,13 @@ struct TaskListView: View {
             editor = EditorSheet(task: task)
         } label: {
             TaskRowView(task: task) {
-                toggleCompletion(task)
+                model.toggleCompletion(task)
             }
         }
         .buttonStyle(.plain)
         .swipeActions(edge: .leading) {
             Button {
-                toggleCompletion(task)
+                model.toggleCompletion(task)
             } label: {
                 Label(
                     task.isCompleted ? "Uncomplete" : "Complete",
@@ -67,27 +122,10 @@ struct TaskListView: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                delete(task)
+                model.delete(task)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-    }
-
-    private func toggleCompletion(_ task: TodoTask) {
-        guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        tasks[index].isCompleted.toggle()
-    }
-
-    private func delete(_ task: TodoTask) {
-        tasks.removeAll { $0.id == task.id }
-    }
-
-    private func save(_ task: TodoTask) {
-        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
-            tasks[index] = task
-        } else {
-            tasks.append(task)
         }
     }
 }
@@ -99,6 +137,14 @@ private extension TaskListView {
     }
 }
 
-#Preview {
-    TaskListView(repository: AppEnvironment.preview.repository)
+#Preview("Loaded") {
+    TaskListView(repository: SampleTaskRepository())
+}
+
+#Preview("Empty") {
+    TaskListView(repository: SampleTaskRepository(empty: true))
+}
+
+#Preview("Failed") {
+    TaskListView(repository: SampleTaskRepository(fails: true))
 }

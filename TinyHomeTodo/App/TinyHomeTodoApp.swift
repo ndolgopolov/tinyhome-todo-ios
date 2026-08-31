@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct TinyHomeTodoApp: App {
+    // Set `.preview` to run without backend
     private let environment = AppEnvironment.live
 
     var body: some Scene {
