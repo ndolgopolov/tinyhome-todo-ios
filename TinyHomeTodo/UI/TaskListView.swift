@@ -63,22 +63,32 @@ struct TaskListView: View {
             row(for: task)
         }
         .listStyle(.plain)
+        .refreshable {
+            await model.refresh()
+        }
     }
     
     // ContentUnavailableView is not available on iOS < 17
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "checklist")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            Text("No tasks yet")
-                .font(.headline)
-            Text("Tap + to add one.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 8) {
+                    Image(systemName: "checklist")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text("No tasks yet")
+                        .font(.headline)
+                    Text("Tap + to add one.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            .refreshable {
+                await model.refresh()
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // ContentUnavailableView is not available on iOS < 17
