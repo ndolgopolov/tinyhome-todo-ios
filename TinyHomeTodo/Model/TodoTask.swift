@@ -16,18 +16,27 @@ struct TodoTask: Identifiable {
 }
 
 extension TodoTask {
+    // due date is day-only (no time picker) but stays a full datetime,
+    // so adding a time picker later is a UI-only change
+    static func endOfDay(for date: Date) -> Date {
+        Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
+    }
+}
+
+extension TodoTask {
     static var samples: [TodoTask] {
         let now = Date.now
+        let day: TimeInterval = 86_400
         return [
-            TodoTask(taskDescription: "Buy groceries", dueDate: now.addingTimeInterval(-3_600)),
-            TodoTask(taskDescription: "Call the landlord about the leak", dueDate: now.addingTimeInterval(7_200)),
-            TodoTask(taskDescription: "Submit expense report", dueDate: now.addingTimeInterval(172_800)),
+            TodoTask(taskDescription: "Buy groceries", dueDate: endOfDay(for: now.addingTimeInterval(-day))),
+            TodoTask(taskDescription: "Call the landlord about the leak", dueDate: endOfDay(for: now)),
+            TodoTask(taskDescription: "Submit expense report", dueDate: endOfDay(for: now.addingTimeInterval(2 * day))),
             TodoTask(taskDescription: "Water the plants"),
-            TodoTask(taskDescription: "Renew passport", dueDate: now.addingTimeInterval(2_592_000)),
+            TodoTask(taskDescription: "Renew passport", dueDate: endOfDay(for: now.addingTimeInterval(30 * day))),
             TodoTask(
                 taskDescription: "Book dentist appointment",
                 isCompleted: true,
-                dueDate: now.addingTimeInterval(-432_000)
+                dueDate: endOfDay(for: now.addingTimeInterval(-5 * day))
             ),
             TodoTask(taskDescription: "Read the onboarding doc", isCompleted: true),
         ]

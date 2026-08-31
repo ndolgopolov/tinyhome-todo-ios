@@ -26,7 +26,7 @@ struct TaskRowView: View {
                     .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
 
                 if let dueDate = task.dueDate {
-                    Text(dueDate.formatted(date: .abbreviated, time: .shortened))
+                    Text(dueDate.formatted(date: .abbreviated, time: .omitted))
                         .font(.footnote)
                         .foregroundStyle(isOverdue ? Color.red : Color.secondary)
                 }
