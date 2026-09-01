@@ -10,6 +10,7 @@ import SwiftUI
 struct TaskListView: View {
     @StateObject private var model: TaskListViewModel
     @State private var editor: EditorSheet?
+    @State private var deletionTarget: TodoTask?
 
     init(repository: any TaskRepository) {
         _model = StateObject(wrappedValue: TaskListViewModel(repository: repository))
@@ -43,12 +44,24 @@ struct TaskListView: View {
         }
         .alert(
             "Unable to save your changes",
-            isPresented: writeErrorPresented,
+            isPresented: Binding(presence: $model.saveErrorMessage),
             presenting: model.saveErrorMessage
         ) { _ in
             Button("OK", role: .cancel) {}
         } message: { message in
             Text(message)
+        }
+        .alert(
+            "Delete Task?",
+            isPresented: Binding(presence: $deletionTarget),
+            presenting: deletionTarget
+        ) { task in
+            Button("Delete", role: .destructive) {
+                model.delete(task)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { task in
+            Text("\u{201C}\(task.taskDescription)\u{201D} will be deleted.")
         }
         .task(id: model.query) {
             await model.load()
@@ -90,17 +103,6 @@ struct TaskListView: View {
         model.query == .default
             ? "line.3.horizontal.decrease.circle"
             : "line.3.horizontal.decrease.circle.fill"
-    }
-
-    private var writeErrorPresented: Binding<Bool> {
-        Binding(
-            get: { model.saveErrorMessage != nil },
-            set: { presented in
-                if !presented {
-                    model.saveErrorMessage = nil
-                }
-            }
-        )
     }
 
     @ViewBuilder
@@ -202,12 +204,13 @@ struct TaskListView: View {
             }
             .tint(.green)
         }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                model.delete(task)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                deletionTarget = task
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .tint(.red)
         }
     }
 }
