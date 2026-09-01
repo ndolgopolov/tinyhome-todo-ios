@@ -15,15 +15,32 @@ struct SampleTaskRepository: TaskRepository {
     
     func fetchTasks() async throws -> [TodoTask] {
         try await Task.sleep(for: .milliseconds(120))
-        
+
         if empty {
             return []
         }
-        
+
         if fails {
             throw URLError(.notConnectedToInternet)
         }
-        
+
         return TodoTask.samples
+    }
+
+    func create(_ task: TodoTask) async throws -> TodoTask {
+        try await Task.sleep(for: .milliseconds(120))
+        var created = task
+        created.id = UUID()
+        created.createdDate = .now
+        return created
+    }
+
+    func update(_ task: TodoTask) async throws -> TodoTask {
+        try await Task.sleep(for: .milliseconds(120))
+        return task
+    }
+
+    func delete(_: UUID) async throws {
+        try await Task.sleep(for: .milliseconds(120))
     }
 }

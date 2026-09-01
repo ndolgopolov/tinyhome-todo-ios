@@ -13,6 +13,12 @@ enum JSONCoding {
         decoder.dateDecodingStrategy = .custom(decodeISO8601Date)
         return decoder
     }
+
+    static func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
 }
 
 private func decodeISO8601Date(_ decoder: any Decoder) throws -> Date {
