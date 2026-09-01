@@ -21,6 +21,7 @@ final class TaskListViewModel: ObservableObject {
     @Published var saveErrorMessage: String?
 
     private let repository: any TaskRepository
+    private let query = TaskQuery.default
     private var pendingWrites: [UUID: Task<Void, Never>] = [:]
     private var newestWriteRequest: [UUID: Int] = [:]
 
@@ -31,7 +32,7 @@ final class TaskListViewModel: ObservableObject {
     func load() async {
         state = .loading
         do {
-            tasks = try await repository.fetchTasks()
+            tasks = try await repository.fetch(query)
             state = .ready
         } catch {
             state = .failed
@@ -39,7 +40,7 @@ final class TaskListViewModel: ObservableObject {
     }
 
     func refresh() async {
-        if let fetched = try? await repository.fetchTasks() {
+        if let fetched = try? await repository.fetch(query) {
             tasks = fetched
         }
     }
@@ -79,7 +80,7 @@ final class TaskListViewModel: ObservableObject {
             }
             replace(id: task.id, with: saved)
 
-            if let fresh = try? await repository.fetchTasks() {
+            if let fresh = try? await repository.fetch(query) {
                 tasks = fresh
             }
         }

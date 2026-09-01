@@ -16,8 +16,8 @@ struct APITaskRepository: TaskRepository {
         category: "api"
     )
 
-    func fetchTasks() async throws -> [TodoTask] {
-        let data = try await perform(makeRequest("GET", path: Endpoint.tasks))
+    func fetch(_ query: TaskQuery) async throws -> [TodoTask] {
+        let data = try await perform(makeRequest("GET", path: Endpoint.tasks, queryItems: query.queryItems))
         return try JSONCoding.makeDecoder().decode([TodoTask].self, from: data)
     }
 
@@ -53,9 +53,12 @@ struct APITaskRepository: TaskRepository {
         return try JSONCoding.makeDecoder().decode(TodoTask.self, from: data)
     }
 
-    private func makeRequest(_ method: String, path: String) throws -> URLRequest {
-        guard let url = URL(string: baseURL)?.appending(path: path) else {
+    private func makeRequest(_ method: String, path: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
+        guard var url = URL(string: baseURL)?.appending(path: path) else {
             throw URLError(.badURL)
+        }
+        if !queryItems.isEmpty {
+            url.append(queryItems: queryItems)
         }
 
         var request = URLRequest(url: url)
