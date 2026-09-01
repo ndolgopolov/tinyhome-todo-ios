@@ -8,11 +8,25 @@
 import Foundation
 
 /// Mock-repository for preview and testing purposes
-struct SampleTaskRepository: TaskRepository {
-    /// If true, `fetch(_:)` throws an error
-    var fails = false
-    /// If true, `fetch(_:)` returns an empty array
-    var empty = false
+actor SampleTaskRepository: TaskRepository {
+    private let fails: Bool
+    private let empty: Bool
+    private var tasks = TodoTask.samples
+
+    init() {
+        fails = false
+        empty = false
+    }
+
+    init(fails: Bool) {
+        self.fails = fails
+        empty = false
+    }
+
+    init(empty: Bool) {
+        fails = false
+        self.empty = empty
+    }
 
     func fetch(_ query: TaskQuery) async throws -> [TodoTask] {
         try await Task.sleep(for: .milliseconds(120))
@@ -25,7 +39,7 @@ struct SampleTaskRepository: TaskRepository {
             return []
         }
 
-        return Self.sorted(Self.filtered(TodoTask.samples, by: query), by: query)
+        return Self.sorted(Self.filtered(tasks, by: query), by: query)
     }
 
     func create(_ task: TodoTask) async throws -> TodoTask {
@@ -33,16 +47,22 @@ struct SampleTaskRepository: TaskRepository {
         var created = task
         created.id = UUID()
         created.createdDate = .now
+        tasks.append(created)
         return created
     }
 
     func update(_ task: TodoTask) async throws -> TodoTask {
         try await Task.sleep(for: .milliseconds(120))
+        guard let index = tasks.firstIndex(where: { $0.id == task.id }) else {
+            throw APIError(statusCode: 404, serverMessage: nil)
+        }
+        tasks[index] = task
         return task
     }
 
-    func delete(_: UUID) async throws {
+    func delete(_ id: UUID) async throws {
         try await Task.sleep(for: .milliseconds(120))
+        tasks.removeAll { $0.id == id }
     }
 
     private static func filtered(_ tasks: [TodoTask], by query: TaskQuery) -> [TodoTask] {
