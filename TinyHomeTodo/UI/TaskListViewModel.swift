@@ -21,6 +21,8 @@ final class TaskListViewModel: ObservableObject {
     @Published var saveErrorMessage: String?
 
     private let repository: any TaskRepository
+    private var pendingWrites: [UUID: Task<Void, Never>] = [:]
+    private var newestWriteRequest: [UUID: Int] = [:]
 
     init(repository: any TaskRepository) {
         self.repository = repository
@@ -44,64 +46,66 @@ final class TaskListViewModel: ObservableObject {
 
     func toggleCompletion(_ task: TodoTask) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        var edited = tasks[index]
-        edited.isCompleted.toggle()
-        sendUpdate(edited)
+        tasks[index].isCompleted.toggle()
+        let edited = tasks[index]
+        scheduleWrite(for: task.id) { [self] in
+            replace(id: task.id, with: try await repository.update(edited))
+        }
     }
 
     func delete(_ task: TodoTask) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        let removed = tasks.remove(at: index)
-        Task {
-            do {
-                try await repository.delete(task.id)
-            } catch {
-                restore(removed, at: index)
-                saveErrorMessage = Self.message(for: error)
-            }
+        tasks.remove(at: index)
+        scheduleWrite(for: task.id) { [self] in
+            try await repository.delete(task.id)
         }
     }
 
     func save(_ task: TodoTask) {
-        let snapshot = tasks
         let existingIndex = tasks.firstIndex(where: { $0.id == task.id })
-
         if let existingIndex {
             tasks[existingIndex] = task
         } else {
             tasks.append(task)
         }
 
-        Task {
-            do {
-                let saved: TodoTask
-                if existingIndex == nil {
-                    saved = try await repository.create(task)
-                } else {
-                    saved = try await repository.update(task)
-                }
-                replace(id: task.id, with: saved)
+        let isNew = existingIndex == nil
+        scheduleWrite(for: task.id) { [self] in
+            let saved: TodoTask
+            if isNew {
+                saved = try await repository.create(task)
+            } else {
+                saved = try await repository.update(task)
+            }
+            replace(id: task.id, with: saved)
 
-                if let fresh = try? await repository.fetchTasks() {
-                    tasks = fresh
-                }
-            } catch {
-                tasks = snapshot
-                saveErrorMessage = Self.message(for: error)
+            if let fresh = try? await repository.fetchTasks() {
+                tasks = fresh
             }
         }
     }
 
-    private func sendUpdate(_ task: TodoTask) {
-        guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        let original = tasks[index]
-        tasks[index] = task
-        Task {
+    private func scheduleWrite(for id: UUID, _ write: @escaping () async throws -> Void) {
+        let request = (newestWriteRequest[id] ?? 0) + 1
+        newestWriteRequest[id] = request
+        let previous = pendingWrites[id]
+
+        pendingWrites[id] = Task {
+            if let previous {
+                await previous.value
+            }
+            guard newestWriteRequest[id] == request else { return }
+
             do {
-                replace(id: task.id, with: try await repository.update(task))
+                try await write()
             } catch {
-                replace(id: task.id, with: original)
                 saveErrorMessage = Self.message(for: error)
+                await refresh()
+            }
+
+            if newestWriteRequest[id] == request {
+                newestWriteRequest[id] = nil
+                pendingWrites[id] = nil
             }
         }
     }
@@ -109,10 +113,6 @@ final class TaskListViewModel: ObservableObject {
     private func replace(id: UUID, with task: TodoTask) {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index] = task
-    }
-
-    private func restore(_ task: TodoTask, at index: Int) {
-        tasks.insert(task, at: min(index, tasks.count))
     }
 
     private static func message(for error: Error) -> String {
