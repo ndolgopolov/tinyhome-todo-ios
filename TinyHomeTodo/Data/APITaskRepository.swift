@@ -84,9 +84,19 @@ struct APITaskRepository: TaskRepository {
         #endif
 
         guard (200..<300).contains(status) else {
-            throw URLError(.badServerResponse)
+            throw APIError(statusCode: status, serverMessage: Self.serverMessage(from: data))
         }
         return data
+    }
+
+    private static func serverMessage(from data: Data) -> String? {
+        guard
+            let body = try? JSONDecoder().decode(ErrorBody.self, from: data),
+            !body.message.isEmpty
+        else {
+            return nil
+        }
+        return body.message
     }
 
     private enum Endpoint {
@@ -102,6 +112,10 @@ private struct CreateBody: Encodable {
     let taskDescription: String
     let completed: Bool
     let dueDate: Date?
+}
+
+private struct ErrorBody: Decodable {
+    let message: String
 }
 
 private struct UpdateBody: Encodable {

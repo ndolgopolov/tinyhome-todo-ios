@@ -36,12 +36,29 @@ struct TaskListView: View {
         .sheet(item: $editor) { sheet in
             TaskEditorView(draft: sheet.task, onSave: model.save)
         }
-        .alert("Unable to save your changes", isPresented: $model.showWriteError) {
+        .alert(
+            "Unable to save your changes",
+            isPresented: writeErrorPresented,
+            presenting: model.saveErrorMessage
+        ) { _ in
             Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
         }
         .task {
             await model.load()
         }
+    }
+
+    private var writeErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.saveErrorMessage != nil },
+            set: { presented in
+                if !presented {
+                    model.saveErrorMessage = nil
+                }
+            }
+        )
     }
 
     @ViewBuilder

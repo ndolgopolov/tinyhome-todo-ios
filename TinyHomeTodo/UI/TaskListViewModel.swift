@@ -18,7 +18,7 @@ final class TaskListViewModel: ObservableObject {
 
     @Published private(set) var tasks: [TodoTask] = []
     @Published private(set) var state: State = .loading
-    @Published var showWriteError = false
+    @Published var saveErrorMessage: String?
 
     private let repository: any TaskRepository
 
@@ -57,7 +57,7 @@ final class TaskListViewModel: ObservableObject {
                 try await repository.delete(task.id)
             } catch {
                 restore(removed, at: index)
-                showWriteError = true
+                saveErrorMessage = Self.message(for: error)
             }
         }
     }
@@ -87,7 +87,7 @@ final class TaskListViewModel: ObservableObject {
                 }
             } catch {
                 tasks = snapshot
-                showWriteError = true
+                saveErrorMessage = Self.message(for: error)
             }
         }
     }
@@ -101,7 +101,7 @@ final class TaskListViewModel: ObservableObject {
                 replace(id: task.id, with: try await repository.update(task))
             } catch {
                 replace(id: task.id, with: original)
-                showWriteError = true
+                saveErrorMessage = Self.message(for: error)
             }
         }
     }
@@ -113,5 +113,15 @@ final class TaskListViewModel: ObservableObject {
 
     private func restore(_ task: TodoTask, at index: Int) {
         tasks.insert(task, at: min(index, tasks.count))
+    }
+
+    private static func message(for error: Error) -> String {
+        if let apiError = error as? APIError {
+            return apiError.serverMessage ?? "The server rejected the change"
+        }
+        if error is URLError {
+            return "Can't reach the server. Check your connection"
+        }
+        return "Something went wrong. Please try again"
     }
 }
