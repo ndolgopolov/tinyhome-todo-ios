@@ -19,6 +19,11 @@ struct TaskListView: View {
         NavigationStack {
             content
                 .navigationTitle("Tasks")
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        filterMenu
+                    }
+                }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     Color.clear.frame(height: 76)
                 }
@@ -45,9 +50,46 @@ struct TaskListView: View {
         } message: { message in
             Text(message)
         }
-        .task {
+        .task(id: model.query) {
             await model.load()
         }
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            Section("Filter") {
+                Picker("Filter", selection: $model.completion) {
+                    Text("All").tag(CompletionFilter.all)
+                    Text("Not Completed").tag(CompletionFilter.active)
+                    Text("Completed").tag(CompletionFilter.completed)
+                }
+                .pickerStyle(.inline)
+            }
+
+            Section("Sort By") {
+                Picker("Sort By", selection: $model.sortField) {
+                    Text("Due Date").tag(SortField.dueDate)
+                    Text("Creation Date").tag(SortField.createdDate)
+                }
+                .pickerStyle(.inline)
+            }
+
+            Section("Order") {
+                Picker("Order", selection: $model.sortDirection) {
+                    Text("Ascending").tag(SortDirection.ascending)
+                    Text("Descending").tag(SortDirection.descending)
+                }
+                .pickerStyle(.inline)
+            }
+        } label: {
+            Label("Filter and sort", systemImage: menuIcon)
+        }
+    }
+
+    private var menuIcon: String {
+        model.query == .default
+            ? "line.3.horizontal.decrease.circle"
+            : "line.3.horizontal.decrease.circle.fill"
     }
 
     private var writeErrorPresented: Binding<Bool> {
@@ -97,11 +139,13 @@ struct TaskListView: View {
                         .font(.largeTitle)
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
-                    Text("No tasks yet")
+                    Text(emptyTitle)
                         .font(.headline)
-                    Text("Tap + to add one.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if let emptySubtitle {
+                        Text(emptySubtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
@@ -109,6 +153,14 @@ struct TaskListView: View {
                 await model.refresh()
             }
         }
+    }
+
+    private var emptyTitle: String {
+        model.completion == .all ? "No tasks yet" : "No matching tasks"
+    }
+
+    private var emptySubtitle: String? {
+        model.completion == .all ? "Tap + to add one." : nil
     }
 
     // ContentUnavailableView is not available on iOS < 17

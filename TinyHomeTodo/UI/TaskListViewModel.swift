@@ -19,23 +19,53 @@ final class TaskListViewModel: ObservableObject {
     @Published private(set) var tasks: [TodoTask] = []
     @Published private(set) var state: State = .loading
     @Published var saveErrorMessage: String?
+    @Published var completion: CompletionFilter {
+        didSet { persistQuery() }
+    }
+    @Published var sortField: SortField {
+        didSet { persistQuery() }
+    }
+    @Published var sortDirection: SortDirection {
+        didSet { persistQuery() }
+    }
 
     private let repository: any TaskRepository
-    private let query = TaskQuery.default
     private var pendingWrites: [UUID: Task<Void, Never>] = [:]
     private var newestWriteRequest: [UUID: Int] = [:]
 
+    var query: TaskQuery {
+        TaskQuery(completion: completion, sortField: sortField, sortDirection: sortDirection)
+    }
+
+    private enum DefaultsKey {
+        static let completion = "taskQuery.completion"
+        static let sortField = "taskQuery.sortField"
+        static let sortDirection = "taskQuery.sortDirection"
+    }
+
     init(repository: any TaskRepository) {
         self.repository = repository
+
+        let defaults = UserDefaults.standard
+        completion = defaults.string(forKey: DefaultsKey.completion)
+            .flatMap { CompletionFilter(rawValue: $0) } ?? .all
+        sortField = defaults.string(forKey: DefaultsKey.sortField)
+            .flatMap { SortField(rawValue: $0) } ?? .dueDate
+        sortDirection = defaults.string(forKey: DefaultsKey.sortDirection)
+            .flatMap { SortDirection(rawValue: $0) } ?? .ascending
     }
 
     func load() async {
-        state = .loading
+        if state != .ready {
+            state = .loading
+        }
         do {
             tasks = try await repository.fetch(query)
             state = .ready
         } catch {
-            state = .failed
+            if state != .ready, !Task.isCancelled {
+                state = .failed
+            }
         }
     }
 
@@ -114,6 +144,13 @@ final class TaskListViewModel: ObservableObject {
     private func replace(id: UUID, with task: TodoTask) {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index] = task
+    }
+
+    private func persistQuery() {
+        let defaults = UserDefaults.standard
+        defaults.set(completion.rawValue, forKey: DefaultsKey.completion)
+        defaults.set(sortField.rawValue, forKey: DefaultsKey.sortField)
+        defaults.set(sortDirection.rawValue, forKey: DefaultsKey.sortDirection)
     }
 
     private static func message(for error: Error) -> String {
